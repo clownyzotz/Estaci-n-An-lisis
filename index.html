@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Explorando Tablas en Excel</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: #F7F4EF;
+      min-height: 100vh;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 2rem 1rem 3rem;
+      color: #2C2C2A;
+    }
+
+    .game-wrap {
+      width: 100%;
+      max-width: 660px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.25rem;
+    }
+
+    /* ── Top bar ── */
+    .top-bar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+    }
+
+    .game-title {
+      font-size: 13px;
+      font-weight: 500;
+      color: #0F6E56;
+      white-space: nowrap;
+    }
+
+    .progress-track {
+      flex: 1;
+      height: 7px;
+      background: #D3D1C7;
+      border-radius: 99px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: #1D9E75;
+      border-radius: 99px;
+      transition: width 0.5s ease;
+    }
+
+    .q-counter {
+      font-size: 13px;
+      color: #5F5E5A;
+      white-space: nowrap;
+    }
+
+    /* ── Question card ── */
+    .question-card {
+      background: #fff;
+      border: 1px solid #D3D1C7;
+      border-radius: 18px;
+      padding: 1.75rem 2rem;
+      width: 100%;
+      text-align: center;
+    }
+
+    .q-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #1D9E75;
+      margin-bottom: 0.6rem;
+    }
+
+    .q-text {
+      font-size: 17px;
+      font-weight: 500;
+      line-height: 1.55;
+      color: #2C2C2A;
+    }
+
+    /* ── Table preview ── */
+    .table-slot {
+      margin-top: 1.1rem;
+      display: flex;
+      justify-content: center;
+    }
+
+    .data-table {
+      border-collapse: collapse;
+      font-size: 14px;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .data-table th {
+      background: #E1F5EE;
+      color: #085041;
+      padding: 7px 22px;
+      font-weight: 600;
+      border: 1px solid #9FE1CB;
+    }
+
+    .data-table td {
+      padding: 7px 22px;
+      border: 1px solid #D3D1C7;
+      color: #2C2C2A;
+      background: #fff;
+    }
+
+    /* ── Options ── */
+    .options-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      width: 100%;
+    }
+
+    .opt-btn {
+      border: 1.5px solid #D3D1C7;
+      border-radius: 13px;
+      padding: 0.85rem 1rem;
+      font-size: 14px;
+      font-family: inherit;
+      color: #2C2C2A;
+      background: #fff;
+      cursor: pointer;
+      text-align: left;
+      display: flex;
+      align-items: flex-start;
+      gap: 9px;
+      line-height: 1.45;
+      transition: border-color 0.15s, background 0.15s, transform 0.1s;
+    }
+
+    .opt-btn:hover:not(:disabled) {
+      border-color: #1D9E75;
+      background: #F0FAF6;
+    }
+
+    .opt-btn:active:not(:disabled) { transform: scale(0.98); }
+
+    .opt-letter {
+      min-width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: #E1F5EE;
+      color: #085041;
+      font-size: 12px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .opt-btn.correct {
+      border-color: #1D9E75;
+      background: #E1F5EE;
+    }
+    .opt-btn.correct .opt-letter {
+      background: #1D9E75;
+      color: #fff;
+    }
+    .opt-btn.wrong {
+      border-color: #F0997B;
+      background: #FAECE7;
+    }
+    .opt-btn.wrong .opt-letter {
+      background: #F0997B;
+      color: #fff;
+    }
+    .opt-btn:disabled { cursor: default; }
+
+    /* ── Feedback ── */
+    .feedback-box {
+      width: 100%;
+      border-radius: 13px;
+      padding: 1rem 1.25rem;
+      font-size: 14px;
+      line-height: 1.6;
+      display: none;
+    }
+    .feedback-box.show { display: block; }
+    .feedback-box.ok  { background: #E1F5EE; color: #085041; border: 1px solid #5DCAA5; }
+    .feedback-box.nope { background: #FAECE7; color: #4A1B0C; border: 1px solid #F0997B; }
+
+    /* ── Next button ── */
+    .next-btn {
+      padding: 0.7rem 2.25rem;
+      font-size: 14px;
+      font-weight: 600;
+      font-family: inherit;
+      border-radius: 99px;
+      border: none;
+      background: #1D9E75;
+      color: #fff;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+      display: none;
+    }
+    .next-btn.show { display: inline-block; }
+    .next-btn:hover { background: #0F6E56; }
+    .next-btn:active { transform: scale(0.97); }
+
+    /* ── End card ── */
+    .end-card {
+      background: #fff;
+      border: 1px solid #D3D1C7;
+      border-radius: 18px;
+      padding: 2.5rem 2rem;
+      width: 100%;
+      text-align: center;
+      display: none;
+    }
+    .end-card.show { display: block; }
+
+    .end-icon { font-size: 44px; margin-bottom: 0.9rem; }
+    .end-title { font-size: 21px; font-weight: 600; color: #2C2C2A; margin-bottom: 0.65rem; }
+    .end-sub { font-size: 14px; color: #5F5E5A; line-height: 1.65; max-width: 420px; margin: 0 auto 1.5rem; }
+
+    .review-list { text-align: left; margin-top: 0.5rem; }
+    .review-header {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: #888780;
+      margin-bottom: 8px;
+    }
+
+    .review-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 9px;
+      padding: 0.5rem 0;
+      border-bottom: 1px solid #EEEDEE;
+      font-size: 13px;
+      color: #5F5E5A;
+    }
+    .review-item:last-child { border-bottom: none; }
+
+    .dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      margin-top: 3px;
+      flex-shrink: 0;
+    }
+    .dot-ok   { background: #1D9E75; }
+    .dot-nope { background: #D85A30; }
+
+    .restart-btn {
+      margin-top: 1.5rem;
+      padding: 0.65rem 1.75rem;
+      font-size: 13px;
+      font-family: inherit;
+      border-radius: 99px;
+      border: 1.5px solid #1D9E75;
+      background: transparent;
+      color: #0F6E56;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .restart-btn:hover { background: #E1F5EE; }
+
+    /* ── Splash / intro ── */
+    .splash {
+      background: #fff;
+      border: 1px solid #D3D1C7;
+      border-radius: 18px;
+      padding: 2.75rem 2rem;
+      width: 100%;
+      text-align: center;
+    }
+    .splash-icon { font-size: 48px; margin-bottom: 1rem; }
+    .splash-title { font-size: 22px; font-weight: 600; color: #2C2C2A; margin-bottom: 0.6rem; }
+    .splash-sub { font-size: 14px; color: #5F5E5A; line-height: 1.65; max-width: 400px; margin: 0 auto 1.75rem; }
+    .start-btn {
+      padding: 0.8rem 2.5rem;
+      font-size: 15px;
+      font-weight: 600;
+      font-family: inherit;
+      border-radius: 99px;
+      border: none;
+      background: #1D9E75;
+      color: #fff;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+    }
+    .start-btn:hover { background: #0F6E56; }
+    .start-btn:active { transform: scale(0.97); }
+
+    @media (max-width: 480px) {
+      .options-grid { grid-template-columns: 1fr; }
+      .question-card { padding: 1.25rem 1.25rem; }
+    }
+  </style>
+</head>
+<body>
+<div class="game-wrap" id="app">
+
+  <!-- Splash -->
+  <div class="splash" id="splash">
+    <div class="splash-icon">🌿</div>
+    <div class="splash-title">Explorando Tablas en Excel</div>
+    <div class="splash-sub">
+      Un espacio tranquilo para descubrir lo que ya sabes y seguir aprendiendo con curiosidad.
+      No hay puntaje ni presión — solo exploración.
+    </div>
+    <button class="start-btn" onclick="startGame()">Comenzar a explorar</button>
+  </div>
+
+  <!-- Top bar (oculta al inicio) -->
+  <div class="top-bar" id="top-bar" style="display:none;">
+    <span class="game-title">🌱 Tablas en Excel</span>
+    <div class="progress-track"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+    <span class="q-counter" id="q-counter">1 de 8</span>
+  </div>
+
+  <!-- Question card -->
+  <div class="question-card" id="q-card" style="display:none;">
+    <div class="q-label" id="q-label">Pregunta 1</div>
+    <div class="q-text" id="q-text"></div>
+    <div class="table-slot" id="table-slot"></div>
+  </div>
+
+  <!-- Options -->
+  <div class="options-grid" id="opts-grid" style="display:none;"></div>
+
+  <!-- Feedback -->
+  <div class="feedback-box" id="feedback-box"></div>
+
+  <!-- Next -->
+  <button class="next-btn" id="next-btn">Continuar →</button>
+
+  <!-- End card -->
+  <div class="end-card" id="end-card">
+    <div class="end-icon">🌿</div>
+    <div class="end-title" id="end-title"></div>
+    <div class="end-sub" id="end-sub"></div>
+    <div class="review-list" id="review-list"></div>
+    <button class="restart-btn" onclick="restart()">Explorar de nuevo</button>
+  </div>
+
+</div>
+
+<script>
+  const LETTERS = ['A','B','C','D'];
+
+  const questions = [
+    {
+      q: "¿Qué es una tabla en Excel con tus propias palabras?",
+      opts: [
+        "Una forma de organizar información en filas y columnas",
+        "Un dibujo que se hace en la computadora",
+        "Un tipo de fórmula matemática",
+        "Un archivo de imagen"
+      ],
+      correct: 0,
+      ok:   "¡Muy bien! Una tabla organiza la información en filas y columnas para que sea fácil de leer y encontrar datos.",
+      nope: "Casi — una tabla es una forma de organizar información en filas y columnas. ¡Esa idea está muy cerca de ti!"
+    },
+    {
+      q: "¿Para qué sirve una tabla? Elige la opción que menciona dos usos correctos.",
+      opts: [
+        "Para dibujar y escuchar música",
+        "Para organizar datos y hacer cálculos fácilmente",
+        "Para imprimir fotos y editar videos",
+        "Para navegar en internet"
+      ],
+      correct: 1,
+      ok:   "¡Excelente! Las tablas ayudan a organizar datos y también permiten hacer cálculos de forma sencilla.",
+      nope: "La respuesta correcta es organizar datos y hacer cálculos. ¡Lo aprenderás con la práctica!"
+    },
+    {
+      q: "¿Cuál es la diferencia entre una fila y una columna?",
+      opts: [
+        "No hay diferencia, son lo mismo",
+        "La fila va de arriba hacia abajo; la columna de izquierda a derecha",
+        "La fila va de izquierda a derecha; la columna de arriba hacia abajo",
+        "La fila es un número y la columna es una letra"
+      ],
+      correct: 2,
+      ok:   "¡Correcto! Las filas van horizontalmente (de lado a lado) y las columnas van verticalmente (de arriba a abajo).",
+      nope: "La clave es: fila = horizontal (de lado a lado), columna = vertical (de arriba abajo). ¡Ya lo tendrás claro!"
+    },
+    {
+      q: "¿Por qué son importantes los encabezados en una tabla?",
+      opts: [
+        "Solo sirven para decorar la tabla",
+        "Porque indican el nombre de cada columna y ayudan a entender qué datos hay",
+        "Porque hacen que la tabla sea más grande",
+        "No son necesarios en ninguna tabla"
+      ],
+      correct: 1,
+      ok:   "¡Muy bien! Los encabezados nombran cada columna y nos dicen qué tipo de información está guardada ahí.",
+      nope: "Los encabezados son muy importantes: le dan nombre a cada columna para saber qué información contiene. ¡Sigue adelante!"
+    },
+    {
+      q: "Observa esta tabla. ¿Cuál es el encabezado de la primera columna?",
+      table: true,
+      opts: ["Edad", "Carlos", "Nombre", "Guatemala"],
+      correct: 2,
+      ok:   "¡Perfecto! 'Nombre' es el encabezado de la primera columna. Los encabezados siempre van en la primera fila.",
+      nope: "El encabezado de la primera columna es 'Nombre'. ¡Fíjate siempre en la fila de arriba de cada columna!"
+    },
+    {
+      q: "Mirando la tabla, ¿cuántas filas hay en total (incluyendo la fila de encabezados)?",
+      table: true,
+      opts: ["Solo 1 fila", "2 filas", "3 filas", "4 filas"],
+      correct: 1,
+      ok:   "¡Así es! Hay 2 filas: la fila de encabezados (Nombre, Edad, País) y la fila con los datos de Carlos.",
+      nope: "Son 2 filas en total: una con los encabezados y otra con la información de Carlos. ¡Buen intento!"
+    },
+    {
+      q: "¿Cuántas columnas tiene esta tabla?",
+      table: true,
+      opts: ["1 columna", "2 columnas", "3 columnas", "4 columnas"],
+      correct: 2,
+      ok:   "¡Correcto! Las tres columnas son: Nombre, Edad y País.",
+      nope: "La tabla tiene 3 columnas: Nombre, Edad y País. ¡Cada encabezado es una columna!"
+    },
+    {
+      q: "¿Cuál es el 'registro' en esta tabla?",
+      table: true,
+      opts: [
+        "La palabra 'Nombre'",
+        "La fila con los datos de Carlos (Carlos, 12, Guatemala)",
+        "La celda que dice '12'",
+        "El color de fondo de la tabla"
+      ],
+      correct: 1,
+      ok:   "¡Excelente! Un registro es una fila completa con información sobre una persona o cosa. Aquí el registro es Carlos, 12, Guatemala.",
+      nope: "Un registro es toda una fila de datos: Carlos, 12, Guatemala. ¡Es como la historia completa de una persona en la tabla!"
+    }
+  ];
+
+  let current  = 0;
+  let answered = [];
+
+  function tableHTML() {
+    return `<table class="data-table">
+      <tr><th>Nombre</th><th>Edad</th><th>País</th></tr>
+      <tr><td>Carlos</td><td>12</td><td>Guatemala</td></tr>
+    </table>`;
+  }
+
+  function startGame() {
+    document.getElementById('splash').style.display    = 'none';
+    document.getElementById('top-bar').style.display  = 'flex';
+    document.getElementById('q-card').style.display   = 'block';
+    document.getElementById('opts-grid').style.display = 'grid';
+    render();
+  }
+
+  function render() {
+    const q = questions[current];
+
+    document.getElementById('q-label').textContent  = 'Pregunta ' + (current + 1);
+    document.getElementById('q-text').textContent   = q.q;
+    document.getElementById('q-counter').textContent = (current + 1) + ' de ' + questions.length;
+    document.getElementById('progress-fill').style.width = ((current + 1) / questions.length * 100) + '%';
+    document.getElementById('table-slot').innerHTML  = q.table ? tableHTML() : '';
+
+    const grid = document.getElementById('opts-grid');
+    grid.innerHTML = '';
+    q.opts.forEach((opt, i) => {
+      const btn = document.createElement('button');
+      btn.className = 'opt-btn';
+      btn.innerHTML = `<span class="opt-letter">${LETTERS[i]}</span><span>${opt}</span>`;
+      btn.addEventListener('click', () => pick(i));
+      grid.appendChild(btn);
+    });
+
+    document.getElementById('feedback-box').className = 'feedback-box';
+    document.getElementById('next-btn').className     = 'next-btn';
+  }
+
+  function pick(idx) {
+    const q    = questions[current];
+    const btns = document.querySelectorAll('.opt-btn');
+    btns.forEach(b => b.disabled = true);
+
+    const isOk = idx === q.correct;
+    btns[idx].classList.add(isOk ? 'correct' : 'wrong');
+    if (!isOk) btns[q.correct].classList.add('correct');
+
+    const fb = document.getElementById('feedback-box');
+    fb.textContent = isOk ? '🌱 ' + q.ok : '🌼 ' + q.nope;
+    fb.className   = 'feedback-box show ' + (isOk ? 'ok' : 'nope');
+
+    answered.push(isOk);
+    document.getElementById('next-btn').className = 'next-btn show';
+  }
+
+  document.getElementById('next-btn').addEventListener('click', function () {
+    current++;
+    if (current < questions.length) {
+      render();
+    } else {
+      showEnd();
+    }
+  });
+
+  function showEnd() {
+    document.getElementById('top-bar').style.display   = 'none';
+    document.getElementById('q-card').style.display    = 'none';
+    document.getElementById('opts-grid').style.display = 'none';
+    document.getElementById('feedback-box').style.display = 'none';
+    document.getElementById('next-btn').style.display  = 'none';
+
+    const total   = questions.length;
+    const correct = answered.filter(Boolean).length;
+    const ec      = document.getElementById('end-card');
+    ec.className  = 'end-card show';
+
+    let title, sub;
+    if (correct === total) {
+      title = '¡Qué exploración tan hermosa!';
+      sub   = 'Respondiste todas las preguntas. Se nota que te involucraste con el tema de las tablas en Excel con mucho cuidado y atención. ¡Sigue explorando!';
+    } else if (correct >= Math.ceil(total * 0.6)) {
+      title = '¡Muy buen camino recorrido!';
+      sub   = 'Hay preguntas que ya comprendes muy bien. Las que todavía están en proceso de aprendizaje son una oportunidad para seguir creciendo.';
+    } else {
+      title = 'Cada paso cuenta en el aprendizaje';
+      sub   = 'Este recorrido te ayudó a descubrir qué temas necesitan un poco más de atención. Con práctica y curiosidad, todo llega. ¡Ánimo!';
+    }
+
+    document.getElementById('end-title').textContent = title;
+    document.getElementById('end-sub').textContent   = sub;
+
+    const rl = document.getElementById('review-list');
+    rl.innerHTML = '<div class="review-header">Resumen de tu recorrido</div>';
+    questions.forEach((q, i) => {
+      const div  = document.createElement('div');
+      div.className = 'review-item';
+      const dot  = document.createElement('div');
+      dot.className = 'dot ' + (answered[i] ? 'dot-ok' : 'dot-nope');
+      const txt  = document.createElement('span');
+      txt.textContent = 'Pregunta ' + (i + 1) + ': ' +
+        (answered[i] ? 'Respondiste con acierto ✓' : 'Hay espacio para revisitar esto');
+      div.appendChild(dot);
+      div.appendChild(txt);
+      rl.appendChild(div);
+    });
+  }
+
+  function restart() {
+    current  = 0;
+    answered = [];
+    document.getElementById('end-card').className = 'end-card';
+    document.getElementById('top-bar').style.display   = 'flex';
+    document.getElementById('q-card').style.display    = 'block';
+    document.getElementById('opts-grid').style.display = 'grid';
+    document.getElementById('feedback-box').style.display = '';
+    document.getElementById('next-btn').style.display  = '';
+    render();
+  }
+</script>
+</body>
+</html>
